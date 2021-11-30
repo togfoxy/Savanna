@@ -10,10 +10,10 @@ terrainGrassGreen = 3,
 terrainTeal = 4,
 terrainNumberOfTypes = 4,
 
-terrainMinMaxAge = 10, -- 270,
-terrainMaxMaxAge = 30, -- 330,
+terrainMinMaxAge = 270, -- 270,
+terrainMaxMaxAge = 330, -- 330,
 
-timerSpreadTimer = 30
+timerSpreadTimer = 330  -- make this the same as terrainMaxMaxAge
 
 
 }

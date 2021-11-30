@@ -11,9 +11,10 @@ function ccord.init()
     -- define components
     Concord.component("drawable")
     Concord.component("isTile")
+    Concord.component("isAnimal")
     Concord.component("position", function(c, row, col)
-        c.row = row or 10
-        c.col = col or 10
+        c.row = row or love.math.random(1,NUMBER_OF_ROWS)
+        c.col = col or love.math.random(1,NUMBER_OF_COLS)
     end)
     Concord.component("terrainType", function(c, ttype)
         c.value = ttype or love.math.random(1, Enum.terrainNumberOfTypes)
@@ -36,12 +37,18 @@ function ccord.init()
     function systemDraw:draw()
         love.graphics.setColor(1,1,1,1)
         for _, e in ipairs(self.pool) do
-            local terraintype = e.terrainType.value
-            if terraintype ~= nil then
+            local isTile = e.isTile or nil
+            if isTile ~= nil then
+                local x = (e.position.col * TILE_SIZE) - 25
+                local y = (e.position.row * TILE_SIZE) - 25
                 local img = IMAGES[e.terrainType.value]
-                local x = (e.position.col * TILE_SIZE) - 50
-                local y = (e.position.row * TILE_SIZE) - 50
                 love.graphics.draw(img, x, y, 0, TILE_SIZE / 256)
+            end
+            local isAnimal = e.isAnimal or nil
+            if isAnimal ~= nil then
+                local x = (e.position.col * TILE_SIZE)
+                local y = (e.position.row * TILE_SIZE)
+                love.graphics.circle("fill", x, y, 5)
             end
         end
     end
@@ -131,6 +138,9 @@ function ccord.init()
     for i = 1, NUMBER_OF_BOTS do
         BOTS = Concord.entity(WORLD)
         -- assign components
+        :give("position")
+        :give("drawable")
+        :give("isAnimal")
 
 
 
