@@ -51,6 +51,8 @@ function love.load()
 	IMAGES[Enum.terrainGrassDry] = love.graphics.newImage("assets/images/grass_dry_block_256x.png")
 	IMAGES[Enum.terrainGrassGreen] = love.graphics.newImage("assets/images/grass_green_block_256x.png")
 	IMAGES[Enum.terrainTeal] = love.graphics.newImage("assets/images/grass_teal_block_256x.png")
+	IMAGES[Enum.terrainHighlights] = love.graphics.newImage("assets/images/highlights for colorizing.png")
+
 
 	for row = 1, NUMBER_OF_ROWS do
 		MAP[row] = {}

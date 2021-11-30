@@ -5,13 +5,15 @@ function ccord.init()
 
     -- Create the World
     WORLD = Concord.world()
-    BOTS = {}
-
 
     -- define components
     Concord.component("drawable")
     Concord.component("isTile")
     Concord.component("isAnimal")
+    Concord.component("canEat", function(c)
+        c.currentCalories = 100
+        c.calorieConsumptionRate = 1    -- calaries lost per second
+    end)
     Concord.component("position", function(c, row, col)
         c.row = row or love.math.random(1,NUMBER_OF_ROWS)
         c.col = col or love.math.random(1,NUMBER_OF_COLS)
@@ -28,7 +30,6 @@ function ccord.init()
     Concord.component("spread", function(c)
         c.timer = love.math.random((Enum.timerSpreadTimer / 2), Enum.timerSpreadTimer)
     end)
-
 
     -- define Systems
     systemDraw = Concord.system({
@@ -60,7 +61,8 @@ function ccord.init()
         for _, e in ipairs(self.pool) do
             e.age.value = e.age.value + dt
             -- check for maturity
-            if e.terrainType.value ~= nil then
+            local isTile = e.isTile or nil
+            if isTile ~= nil then
                 -- age the grass
                 if e.age.value > (e.maxAge.value / 2) and e.terrainType.value == Enum.terrainGrassGreen then
                     e.terrainType.value = Enum.terrainTeal
@@ -68,6 +70,36 @@ function ccord.init()
                 if e.age.value > e.maxAge.value and e.terrainType.value ~= Enum.terrainBurned then
                     -- kill grass and reset
                     e.terrainType.value = Enum.terrainGrassDry
+                end
+            end
+            local isAnimal = e.isAnimal or nil
+            if isAnimal ~= nil then
+                if e.age.value > e.maxAge.value then e:destroy() end
+            end
+            local canEat = e.canEat or nil
+            if canEat then
+                e.canEat.currentCalories = e.canEat.currentCalories - (e.canEat.calorieConsumptionRate * dt)
+                if e.canEat.currentCalories < 0 then e:destroy() end
+            end
+        end
+    end
+
+    systemcanEat = Concord.system({
+        pool = {"canEat", "position"}
+    })
+    function systemcanEat:update(dt)
+        for k, e in ipairs(self.pool) do
+            local rndnum = love.math.random(100)
+            if  rndnum > e.canEat.currentCalories then
+                -- time to eat
+                local animalrow = e.position.row
+                local animalcol = e.position.col
+                if MAP[animalrow][animalcol].terrainType.value == Enum.terrainTeal then
+                    -- can eat
+                    MAP[animalrow][animalcol].terrainType.value = Enum.terrainGrassDry
+                    MAP[animalrow][animalcol].age.value = 0
+                    MAP[animalrow][animalcol].maxAge.value = love.math.random(Enum.terrainMinMaxAge, Enum.terrainMaxMaxAge)
+                    e.canEat.currentCalories = e.canEat.currentCalories + 30
                 end
             end
         end
@@ -115,7 +147,7 @@ function ccord.init()
     end
 
     -- Add the Systems
-    WORLD:addSystems(systemDraw, systemAge, systemSpread, systemIsTile)
+    WORLD:addSystems(systemDraw, systemAge, systemSpread, systemIsTile, systemcanEat)
 
 
 
@@ -141,9 +173,9 @@ function ccord.init()
         :give("position")
         :give("drawable")
         :give("isAnimal")
-
-
-
+        :give("age")
+        :give("maxAge", love.math.random(Enum.terrainMinMaxAge * 3, Enum.terrainMaxMaxAge * 3))
+        :give("canEat")
 
     end
 

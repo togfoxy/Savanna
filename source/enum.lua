@@ -8,6 +8,7 @@ terrainBurned = 1,
 terrainGrassDry = 2,
 terrainGrassGreen = 3,
 terrainTeal = 4,
+terrainHighlights = 5,
 terrainNumberOfTypes = 4,
 
 terrainMinMaxAge = 270, -- 270,
