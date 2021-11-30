@@ -19,12 +19,12 @@ SCREEN_STACK = {}
 
 NUMBER_OF_BOTS = 10
 TILE_SIZE = 50
--- MAP = {}
+MAP = {}
 NUMBER_OF_ROWS = (Cf.round(SCREEN_HEIGHT / TILE_SIZE)) - 1
 NUMBER_OF_COLS = (Cf.round(SCREEN_WIDTH / TILE_SIZE))
+print("There are " .. NUMBER_OF_ROWS .. " rows and " .. NUMBER_OF_COLS .. " columns.")
 
 IMAGES = {}
-
 
 function love.keyreleased( key, scancode )
 	if key == "escape" then
@@ -52,7 +52,17 @@ function love.load()
 	IMAGES[Enum.terrainGrassGreen] = love.graphics.newImage("assets/images/grass_green_block_256x.png")
 	IMAGES[Enum.terrainTeal] = love.graphics.newImage("assets/images/grass_teal_block_256x.png")
 
+	for row = 1, NUMBER_OF_ROWS do
+		MAP[row] = {}
+	end
+	for col = 1, NUMBER_OF_COLS do
+		for row = 1,NUMBER_OF_ROWS do
+			MAP[row][col] = {}
+		end
+	end
+
 	Ccord.init()
+	WORLD:emit("init")
 
 end
 
