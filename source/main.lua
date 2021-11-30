@@ -17,6 +17,15 @@ SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 SCREEN_STACK = {}
 
+NUMBER_OF_BOTS = 10
+TILE_SIZE = 50
+-- MAP = {}
+NUMBER_OF_ROWS = (Cf.round(SCREEN_HEIGHT / TILE_SIZE)) - 1
+NUMBER_OF_COLS = (Cf.round(SCREEN_WIDTH / TILE_SIZE))
+
+IMAGES = {}
+
+
 function love.keyreleased( key, scancode )
 	if key == "escape" then
 		Cf.RemoveScreen(SCREEN_STACK)
@@ -37,6 +46,12 @@ function love.load()
 	Cf.AddScreen("MainMenu", SCREEN_STACK)
 
 	love.graphics.setPointSize( 1 )
+
+	IMAGES[Enum.terrainBurned] = love.graphics.newImage("assets/images/grass_burned_block_256x.png")
+	IMAGES[Enum.terrainGrassDry] = love.graphics.newImage("assets/images/grass_dry_block_256x.png")
+	IMAGES[Enum.terrainGrassGreen] = love.graphics.newImage("assets/images/grass_green_block_256x.png")
+	IMAGES[Enum.terrainTeal] = love.graphics.newImage("assets/images/grass_teal_block_256x.png")
+
 	Ccord.init()
 
 end
