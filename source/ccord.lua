@@ -10,6 +10,7 @@ function ccord.init()
     Concord.component("drawable")
     Concord.component("isTile")
     Concord.component("isAnimal")
+    Concord.component("hasEdibleGrass")
     Concord.component("canEat", function(c)
         c.currentCalories = 100
         c.calorieConsumptionRate = 1    -- calaries lost per second
@@ -38,15 +39,13 @@ function ccord.init()
     function systemDraw:draw()
         love.graphics.setColor(1,1,1,1)
         for _, e in ipairs(self.pool) do
-            local isTile = e.isTile or nil
-            if isTile ~= nil then
+            if e.isTile then
                 local x = (e.position.col * TILE_SIZE) - 25
                 local y = (e.position.row * TILE_SIZE) - 25
                 local img = IMAGES[e.terrainType.value]
                 love.graphics.draw(img, x, y, 0, TILE_SIZE / 256)
             end
-            local isAnimal = e.isAnimal or nil
-            if isAnimal ~= nil then
+            if e.isAnimal then
                 local x = (e.position.col * TILE_SIZE)
                 local y = (e.position.row * TILE_SIZE)
                 love.graphics.circle("fill", x, y, 5)
@@ -61,23 +60,24 @@ function ccord.init()
         for _, e in ipairs(self.pool) do
             e.age.value = e.age.value + dt
             -- check for maturity
-            local isTile = e.isTile or nil
-            if isTile ~= nil then
+            if e.isTile then
                 -- age the grass
                 if e.age.value > (e.maxAge.value / 2) and e.terrainType.value == Enum.terrainGrassGreen then
                     e.terrainType.value = Enum.terrainTeal
+                    e:ensure("hasEdibleGrass")
+                    MAP[e.property.row][e.property.col].hasEdibleGrass = true
                 end
                 if e.age.value > e.maxAge.value and e.terrainType.value ~= Enum.terrainBurned then
                     -- kill grass and reset
                     e.terrainType.value = Enum.terrainGrassDry
+                    e:remove("hasEdibleGrass")
+                    MAP[e.property.row][e.property.col].hasEdibleGrass = false
                 end
             end
-            local isAnimal = e.isAnimal or nil
-            if isAnimal ~= nil then
+            if e.isAnimal then
                 if e.age.value > e.maxAge.value then e:destroy() end
             end
-            local canEat = e.canEat or nil
-            if canEat then
+            if e.canEat then
                 e.canEat.currentCalories = e.canEat.currentCalories - (e.canEat.calorieConsumptionRate * dt)
                 if e.canEat.currentCalories < 0 then e:destroy() end
             end
@@ -94,7 +94,7 @@ function ccord.init()
                 -- time to eat
                 local animalrow = e.position.row
                 local animalcol = e.position.col
-                if MAP[animalrow][animalcol].terrainType.value == Enum.terrainTeal then
+                if MAP[animalrow][animalcol].hasEdibleGrass then
                     -- can eat
                     MAP[animalrow][animalcol].terrainType.value = Enum.terrainGrassDry
                     MAP[animalrow][animalcol].age.value = 0
@@ -109,6 +109,13 @@ function ccord.init()
         pool = {"isTile"}
     })
     function systemIsTile:init()
+        for _, e in ipairs(self.pool) do
+            if e.terrainType.value == Enum.terrainTeal then
+                e:ensure("hasEdibleGrass")
+            else
+                e:remove("hasEdibleGrass")
+            end
+        end
         self.pool.onEntityAdded = function(_, entity)
             local row = entity.position.row
             local col = entity.position.col
