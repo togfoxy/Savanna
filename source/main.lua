@@ -10,8 +10,10 @@ Concord = require 'lib.concord'
 -- https://github.com/Tjakka5/Concord
 
 Cf = require 'lib.commonfunctions'
+Profi = require 'lib.profi'
 Ccord = require 'ccord'
 Enum = require 'enum'
+Fun = require 'functions'
 
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
@@ -68,17 +70,21 @@ function love.load()
 
 end
 
-
 function love.draw()
 
 	TLfres.beginRendering(SCREEN_WIDTH,SCREEN_HEIGHT)
-
+--Profi:start()
 	WORLD:emit("draw")
+--Profi:stop()
+--Profi:writeReport( 'MyProfilingReport.txt' )
 
 	TLfres.endRendering({0, 0, 0, 1})
 end
 
-
 function love.update(dt)
+
 	WORLD:emit("update", dt)
+
+
+
 end

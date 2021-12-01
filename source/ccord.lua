@@ -11,6 +11,10 @@ function ccord.init()
     Concord.component("isTile")
     Concord.component("isAnimal")
     Concord.component("hasEdibleGrass")
+    Concord.component("hasTargetTile", function(c, row, col)
+        c.row = row
+        c.col = col
+    end)
     Concord.component("canEat", function(c)
         c.currentCalories = 100
         c.calorieConsumptionRate = 1    -- calaries lost per second
@@ -88,21 +92,60 @@ function ccord.init()
         pool = {"canEat", "position"}
     })
     function systemcanEat:update(dt)
+
         for k, e in ipairs(self.pool) do
             local rndnum = love.math.random(100)
             if  rndnum > e.canEat.currentCalories then
                 -- time to eat
-                local animalrow = e.position.row
-                local animalcol = e.position.col
-                if MAP[animalrow][animalcol].hasEdibleGrass then
+                local animalrow = Cf.round(e.position.row,0)
+                local animalcol = Cf.round(e.position.col,0)
+                local hasEdibleGrass = (MAP[animalrow][animalcol].hasEdibleGrass or nil)
+                if hasEdibleGrass ~= nil then
                     -- can eat
                     MAP[animalrow][animalcol].terrainType.value = Enum.terrainGrassDry
                     MAP[animalrow][animalcol].age.value = 0
                     MAP[animalrow][animalcol].maxAge.value = love.math.random(Enum.terrainMinMaxAge, Enum.terrainMaxMaxAge)
-                    e.canEat.currentCalories = e.canEat.currentCalories + 30
+                    MAP[animalrow][animalcol].hasEdibleGrass = false
+                    e.canEat.currentCalories = e.canEat.currentCalories + 5
+                else
+                    -- not on edible grass but still hungry
+                    -- set target tile to an edible grass
+                    if e.hasTargetTile then
+                        -- already moving - nothing to do
+                    else
+                        local targetTile = {}
+                        targetTile.row, targetTile.col = Fun.getClosestTile(animalrow, animalcol, Enum.terrainTeal)
+                        if targetTile.row ~= 0 then   -- check if there is a closest tile
+                            e:ensure("hasTargetTile")
+                            e.hasTargetTile.row = targetTile.row
+                            e.hasTargetTile.col = targetTile.col
+                        else
+                            error("Target tile not found")
+                        end
+                    end
                 end
             end
         end
+
+    end
+
+    systemMove = Concord.system({
+        pool = {"position", "hasTargetTile", "isAnimal"}
+    })
+    function systemMove:update(dt)
+
+        for k, e in ipairs(self.pool) do
+            -- determine direction
+            -- adjust x and y
+            -- remove hasTargetTile if at destination
+
+
+            Fun.applyMovement(e, 20, dt)
+            if Cf.round(e.position.row,1) == Cf.round(e.hasTargetTile.row,1) and Cf.round(e.position.col,1) and Cf.round(e.hasTargetTile.col,1) then
+                e:remove("hasTargetTile")
+            end
+        end
+
     end
 
     systemIsTile = Concord.system({
@@ -154,7 +197,7 @@ function ccord.init()
     end
 
     -- Add the Systems
-    WORLD:addSystems(systemDraw, systemAge, systemSpread, systemIsTile, systemcanEat)
+    WORLD:addSystems(systemDraw, systemAge, systemSpread, systemIsTile, systemcanEat, systemMove)
 
 
 
