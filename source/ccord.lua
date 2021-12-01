@@ -106,46 +106,37 @@ function ccord.init()
                     MAP[animalrow][animalcol].age.value = 0
                     MAP[animalrow][animalcol].maxAge.value = love.math.random(Enum.terrainMinMaxAge, Enum.terrainMaxMaxAge)
                     MAP[animalrow][animalcol].hasEdibleGrass = false
-                    e.canEat.currentCalories = e.canEat.currentCalories + 5
+                    e.canEat.currentCalories = e.canEat.currentCalories + Enum.grassCalories
                 else
                     -- not on edible grass but still hungry
                     -- set target tile to an edible grass
-                    if e.hasTargetTile then
-                        -- already moving - nothing to do
+                    if e:has("hasTargetTile") then
                     else
                         local targetTile = {}
                         targetTile.row, targetTile.col = Fun.getClosestTile(animalrow, animalcol, Enum.terrainTeal)
-                        if targetTile.row ~= 0 then   -- check if there is a closest tile
-                            e:ensure("hasTargetTile")
-                            e.hasTargetTile.row = targetTile.row
-                            e.hasTargetTile.col = targetTile.col
-                        else
-                            error("Target tile not found")
-                        end
+
+                        e:ensure("hasTargetTile")
+                        e.hasTargetTile.row = targetTile.row
+                        e.hasTargetTile.col = targetTile.col
                     end
                 end
             end
         end
-
     end
 
     systemMove = Concord.system({
         pool = {"position", "hasTargetTile", "isAnimal"}
     })
     function systemMove:update(dt)
-
         for k, e in ipairs(self.pool) do
-            -- determine direction
             -- adjust x and y
-            -- remove hasTargetTile if at destination
-
-
             Fun.applyMovement(e, 20, dt)
-            if Cf.round(e.position.row,1) == Cf.round(e.hasTargetTile.row,1) and Cf.round(e.position.col,1) and Cf.round(e.hasTargetTile.col,1) then
+            -- remove hasTargetTile if at destination
+            if (Cf.round(e.position.row,1) == Cf.round(e.hasTargetTile.row,1)) and Cf.round(e.position.col,1) == Cf.round(e.hasTargetTile.col,1) then
                 e:remove("hasTargetTile")
+
             end
         end
-
     end
 
     systemIsTile = Concord.system({

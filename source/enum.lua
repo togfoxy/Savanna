@@ -14,7 +14,8 @@ terrainNumberOfTypes = 4,
 terrainMinMaxAge = 270, -- 270,
 terrainMaxMaxAge = 330, -- 330,
 
-timerSpreadTimer = 330  -- make this the same as terrainMaxMaxAge
+timerSpreadTimer = 330,  -- make this the same as terrainMaxMaxAge
 
+grassCalories = 30
 
 }

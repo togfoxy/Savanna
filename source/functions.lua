@@ -105,8 +105,10 @@ function functions.applyMovement(e, velocity, dt)
         yvector = yvector / scale
     end
 
-    currentx = currentx + xvector
-    currenty = currenty + yvector
+    currentx = Cf.round(currentx + xvector, 1)
+    currenty = Cf.round(currenty + yvector, 1)
+
+-- print(currentx, currenty, xvector  , yvector  )
 
     e.position.row = (currenty / TILE_SIZE)
     e.position.col = (currentx / TILE_SIZE)
