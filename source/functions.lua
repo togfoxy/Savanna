@@ -127,7 +127,7 @@ function functions.entityCanBreed(e)
 end
 
 function functions.breed(e, f)
--- e and f are parents
+    -- e and f are parents
 	local spawn = Concord.entity(WORLD)
 	:give("drawable")
 	:give("isAnimal")
@@ -136,16 +136,16 @@ function functions.breed(e, f)
 	:give("age", 0)
 	:give("maxAge")
 	:give("hasGender")
-	
-	
+
+
 	if e:has("isHerbivore") then spawn:give("isHerbivore") end
 	if e:has("isCarnivore") then spawn:give("isCarnivore") end
-	
+
 	e.hasGender.breedtimer = Enum.timerBreedTimer
 	f.hasGender.breedtimer = Enum.timerBreedTimer
 	spawn.hasGender.breedtimer = Enum.timerBreedTimer
-	
-print("Bonk")
+
+    print("Bonk")
 
 end
 
@@ -154,7 +154,7 @@ function functions.getClosestGender(entity, targetgender)
 	local entityrow = entity.position.row
 	local entitycol = entity.position.col
 	local closestentity = {}
-	
+
 	local closestdistance = -1
 	for i = 1, #ANIMALS do
 		if ANIMALS[i] ~= entity then
@@ -169,7 +169,7 @@ function functions.getClosestGender(entity, targetgender)
 			end
 		end
 	end
-	
+
 	return closestentity
 
 

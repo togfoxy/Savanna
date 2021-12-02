@@ -21,11 +21,13 @@ SCREEN_STACK = {}
 
 NUMBER_OF_HERBIVORES = 100
 NUMBER_OF_CARNIVORES = 0
+COUNT_GRASS_TILES = 0
 TILE_SIZE = 50
 MAP = {}			-- a 2d table of tiles
 ANIMALS = {}		-- a table of animals
 NUMBER_OF_ROWS = (Cf.round(SCREEN_HEIGHT / TILE_SIZE)) - 1
 NUMBER_OF_COLS = (Cf.round(SCREEN_WIDTH / TILE_SIZE))
+
 print("There are " .. NUMBER_OF_ROWS .. " rows and " .. NUMBER_OF_COLS .. " columns.")
 
 IMAGES = {}
@@ -85,6 +87,17 @@ function love.update(dt)
 
 	WORLD:emit("update", dt)
 
+	if COUNT_GRASS_TILES < 5 then
+		local row = love.math.random(1, NUMBER_OF_ROWS)
+		local col = love.math.random(1, NUMBER_OF_COLS)
 
+		MAP[row][col].terrainType.value = Enum.terrainTeal
+		MAP[row][col].age.value = 0
+		MAP[row][col].maxAge.value = love.math.random(270, 330)
+		MAP[row][col].hasEdibleGrass = true
+		MAP[row][col].spread.timer = 5
+
+		print("Creating grass")
+	end
 
 end

@@ -49,19 +49,23 @@ function ccord.init()
     })
     function systemDraw:draw()
         love.graphics.setColor(1,1,1,1)
+        COUNT_GRASS_TILES = 0
         for _, e in ipairs(self.pool) do
             if e.isTile then
                 local x = (e.position.col * TILE_SIZE) - 25
                 local y = (e.position.row * TILE_SIZE) - 25
                 local img = IMAGES[e.terrainType.value]
                 love.graphics.draw(img, x, y, 0, TILE_SIZE / 256)
+                if e.terrainType.value == Enum.terrainGrassGreen or e.terrainType.value == Enum.terrainTeal then
+                    COUNT_GRASS_TILES = COUNT_GRASS_TILES + 1
+                end
             end
             if e.isAnimal then
 				-- make circle larger with age
 
 				local drawwidth = Cf.round((e.age.value / e.maxAge.value) * 10)
 				if drawwidth < 3 then drawwidth = 3 end
-				
+
 				if e.isHerbivore then
 					if e.hasGender.value == Enum.genderFemale then
 						love.graphics.setColor(1,125/255,125/255,1)
@@ -100,14 +104,14 @@ function ccord.init()
                 end
             end
             if e.isAnimal then
-                if e.age.value > e.maxAge.value then 
-					e:destroy() 
+                if e.age.value > e.maxAge.value then
+					e:destroy()
 					print("Dead from age")
 				end
             end
             if e.canEat then
                 e.canEat.currentCalories = e.canEat.currentCalories - (e.canEat.calorieConsumptionRate * dt)
-                if e.canEat.currentCalories < 0 then 
+                if e.canEat.currentCalories < 0 then
 					e:destroy()
 					print("Dead from hunger")
 				end
@@ -142,7 +146,9 @@ function ccord.init()
 						else
 							local targetTile = {}
 							targetTile.row, targetTile.col = Fun.getClosestTile(animalrow, animalcol, Enum.terrainTeal)
-							e:ensure("hasTargetTile", targetTile.row, targetTile.col)
+                            if targetTile.row ~= 0 then
+							    e:ensure("hasTargetTile", targetTile.row, targetTile.col)
+                            end
 						end
 					end
 				else
@@ -173,7 +179,7 @@ function ccord.init()
         for _, e in ipairs(self.pool) do
             e.spread.timer = e.spread.timer - dt
             if e.spread.timer < 0 then
-                if e.terrainType.value == Enum.terrainTeal and love.math.random(1,150) == 1 then -- slow down the spread
+                if e.terrainType.value == Enum.terrainTeal and love.math.random(1,2) == 1 then -- slow down the spread
                     -- grass spreads
                     local eastwestdirection = 0
                     local northsouthdirection = 0
@@ -189,13 +195,14 @@ function ccord.init()
                             MAP[row][col].terrainType.value = Enum.terrainGrassGreen
                             MAP[row][col].age.value = 0
                             MAP[row][col].maxAge.value = love.math.random(Enum.terrainMinMaxAge, Enum.terrainMaxMaxAge)
+                            e.spread.timer = love.math.random((Enum.timerSpreadTimer / 2), Enum.timerSpreadTimer)
                         end
                     end
                 end
             end
         end
     end
-	
+
 	systemBreed = Concord.system({
 		pool = {"hasGender"}
 	})
@@ -203,7 +210,7 @@ function ccord.init()
 		for _, e in ipairs(self.pool) do
 			e.hasGender.breedtimer = e.hasGender.breedtimer - dt
 			if e.hasGender.breedtimer < 0 then e.hasGender.breedtimer = 0 end
-	
+
 			if Fun.entityCanBreed(e) then
 				local targetgender = ""
 				if e.hasGender.value == Enum.genderMale then
@@ -215,7 +222,7 @@ function ccord.init()
 				local f = {}
 				-- returns an entity
 				f = Fun.getClosestGender(e, targetgender)
-				
+
 				if f ~= nil then
 					e:ensure("hasTargetTile", f.position.row, f.position.col)
 
@@ -225,15 +232,17 @@ function ccord.init()
 							Fun.breed(e, f)	-- e and f are entities
 							-- reset timer even if breeding failed
 							e.hasGender.breedtimer = Enum.timerBreedTimer
-							f.hasGender.breedtimer = Enum.timerBreedTimer							
+							f.hasGender.breedtimer = Enum.timerBreedTimer
 						end
 					end
+                else
+                    print("Opposite sex not available")
 				end
 			end
 
 		end
 	end
-	
+
     systemIsTile = Concord.system({
         pool = {"isTile"},
 		poolB = {"isAnimal"}
@@ -254,7 +263,7 @@ function ccord.init()
 		self.poolB.onEntityAdded = function(_, entity)
 			table.insert(ANIMALS, entity)
 		end
-    end		
+    end
 
     -- Add the Systems
     WORLD:addSystems(systemDraw, systemAge, systemSpread, systemIsTile, systemcanEat, systemMove, systemBreed)
@@ -287,7 +296,7 @@ function ccord.init()
 		:give("hasGender")
 		:give("isHerbivore")
     end
-	
+
     for i = 1, NUMBER_OF_CARNIVORES do
         local BOTS = Concord.entity(WORLD)
         -- assign components
@@ -299,7 +308,7 @@ function ccord.init()
         :give("canEat")
 		:give("hasGender")
 		:give("isCarnivore")
-		
+
 		MAP[BOTS.position.row][BOTS.position.col].hasGender = BOTS.hasGender
 		MAP[BOTS.position.row][BOTS.position.col].hasGender.value = BOTS.hasGender.value
 
