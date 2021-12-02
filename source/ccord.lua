@@ -22,6 +22,7 @@ function ccord.init()
     Concord.component("position", function(c, row, col)
         c.row = row or love.math.random(1,NUMBER_OF_ROWS)
         c.col = col or love.math.random(1,NUMBER_OF_COLS)
+		c.maxSpeed = love.math.random(10,20)
     end)
     Concord.component("terrainType", function(c, ttype)
         c.value = ttype or love.math.random(1, Enum.terrainNumberOfTypes)
@@ -157,7 +158,7 @@ function ccord.init()
     function systemMove:update(dt)
         for k, e in ipairs(self.pool) do
             -- adjust x and y
-            Fun.applyMovement(e, 20, dt)
+            Fun.applyMovement(e, e.position.maxSpeed, dt)
             -- remove hasTargetTile if at destination
             if (Cf.round(e.position.row,1) == Cf.round(e.hasTargetTile.row,1)) and Cf.round(e.position.col,1) == Cf.round(e.hasTargetTile.col,1) then
                 e:remove("hasTargetTile")
@@ -215,7 +216,7 @@ function ccord.init()
 				-- returns an entity
 				f = Fun.getClosestGender(e, targetgender)
 				
-				if f ~= 0 then
+				if f ~= nil then
 					e:ensure("hasTargetTile", f.position.row, f.position.col)
 
 					if e.position.row == f.position.row and e.position.col == f.position.col then
