@@ -118,4 +118,29 @@ function functions.applyMovement(e, velocity, dt)
     if e.position.col > NUMBER_OF_COLS then e.position.col = NUMBER_OF_COLS end
 end
 
+function functions.entityCanBreed(e)
+	-- determines if the provided entity can breed
+	if e.currentCalories > 50 and e.lastBreedTimer <= 0 then	-- 50 is 50% (half full)
+		return true
+	end
+	return false
+end
+
+function breed(e, f)
+	void = Concord.entity(WORLD)
+	:give("drawable")
+	:give("isAnimal")
+	:give("canEat")
+	:give("position", x, y)
+	:give("age")
+	:give("maxAge")
+	
+	:give("hasGender")
+	:give("lastBreedTimer")
+	
+	if e:has("isHerbivore") then :give("isHerbivore") end
+	if e:has("isCarnivore") then :give("isCarnivore") end
+
+end
+
 return functions

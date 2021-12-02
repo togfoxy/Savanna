@@ -35,6 +35,13 @@ function ccord.init()
     Concord.component("spread", function(c)
         c.timer = love.math.random((Enum.timerSpreadTimer / 2), Enum.timerSpreadTimer)
     end)
+	Concord.component("hasGender", function(c)
+		c.value = love.math.random(1,2)
+		c.breedtimer = c.maxAge.value / 3	-- when can next breed
+		--! need to introduce some randomness
+	end)
+	Concord.component("isHerbivore")
+	Concord.component("isCarnivore")
 
     -- define Systems
     systemDraw = Concord.system({
@@ -99,27 +106,31 @@ function ccord.init()
                 -- time to eat
                 local animalrow = Cf.round(e.position.row,0)
                 local animalcol = Cf.round(e.position.col,0)
-                local hasEdibleGrass = (MAP[animalrow][animalcol].hasEdibleGrass or nil)
-                if hasEdibleGrass ~= nil then
-                    -- can eat
-                    MAP[animalrow][animalcol].terrainType.value = Enum.terrainGrassDry
-                    MAP[animalrow][animalcol].age.value = 0
-                    MAP[animalrow][animalcol].maxAge.value = love.math.random(Enum.terrainMinMaxAge, Enum.terrainMaxMaxAge)
-                    MAP[animalrow][animalcol].hasEdibleGrass = false
-                    e.canEat.currentCalories = e.canEat.currentCalories + Enum.grassCalories
-                else
-                    -- not on edible grass but still hungry
-                    -- set target tile to an edible grass
-                    if e:has("hasTargetTile") then
-                    else
-                        local targetTile = {}
-                        targetTile.row, targetTile.col = Fun.getClosestTile(animalrow, animalcol, Enum.terrainTeal)
+				if e.isHerbivore then
+					local hasEdibleGrass = (MAP[animalrow][animalcol].hasEdibleGrass or nil)
+					if hasEdibleGrass ~= nil then
+						-- can eat
+						MAP[animalrow][animalcol].terrainType.value = Enum.terrainGrassDry
+						MAP[animalrow][animalcol].age.value = 0
+						MAP[animalrow][animalcol].maxAge.value = love.math.random(Enum.terrainMinMaxAge, Enum.terrainMaxMaxAge)
+						MAP[animalrow][animalcol].hasEdibleGrass = false
+						e.canEat.currentCalories = e.canEat.currentCalories + Enum.grassCalories
+					else
+						-- not on edible grass but still hungry
+						-- set target tile to an edible grass
+						if e:has("hasTargetTile") then
+						else
+							local targetTile = {}
+							targetTile.row, targetTile.col = Fun.getClosestTile(animalrow, animalcol, Enum.terrainTeal)
 
-                        e:ensure("hasTargetTile")
-                        e.hasTargetTile.row = targetTile.row
-                        e.hasTargetTile.col = targetTile.col
-                    end
-                end
+							e:ensure("hasTargetTile")
+							e.hasTargetTile.row = targetTile.row
+							e.hasTargetTile.col = targetTile.col
+						end
+					end
+				else
+					-- carnivore
+				end
             end
         end
     end
@@ -186,11 +197,35 @@ function ccord.init()
             end
         end
     end
+	
+	systemBreed = Concord.system({
+		pool = {"hasGender"}
+	end
+	function systemBreed:update()
+		for _, e in ipairs(self.pool) do
+			e.hasGender.breedtimer = e.hasGender.breedtimer - dt
+			if e.hasGender.breedtimer < 0 then e.hasGender.breedtimer = 0 end
+	
+			if Cf.entityCanBreed(e) then
+				local targetgender = ""
+				if e.hasGender.value = Enum.genderMale then
+					targetgender = Enum.genderFemale
+				else
+					targetgender = Enum.genderMale
+				end
+				f = getClosestGender(e, targetgender)
+				e.targetTile.row = f.position.row
+				e.targetTile.col = f.position.col
+			end
+			if e.position.row = f.position.row and e.position.col = f.position.col then
+				Cf.Breed(e, f)	-- e and f are entities
+			end	
+		end
+	end
+		
 
     -- Add the Systems
-    WORLD:addSystems(systemDraw, systemAge, systemSpread, systemIsTile, systemcanEat, systemMove)
-
-
+    WORLD:addSystems(systemDraw, systemAge, systemSpread, systemIsTile, systemcanEat, systemMove, systemBreed)
 
     -- Create entitites
     -- create tiles
@@ -208,7 +243,7 @@ function ccord.init()
     end
 
     -- create agents
-    for i = 1, NUMBER_OF_BOTS do
+    for i = 1, NUMBER_OF_HERBIVORES do
         BOTS = Concord.entity(WORLD)
         -- assign components
         :give("position")
@@ -217,9 +252,24 @@ function ccord.init()
         :give("age")
         :give("maxAge", love.math.random(Enum.terrainMinMaxAge * 3, Enum.terrainMaxMaxAge * 3))
         :give("canEat")
-
+		:give("hasGender")
+		:give("lastBreedTimer")
+		:give("isHerbivore")
     end
-
+	
+    for i = 1, NUMBER_OF_CARNIVORES do
+        BOTS = Concord.entity(WORLD)
+        -- assign components
+        :give("position")
+        :give("drawable")
+        :give("isAnimal")
+        :give("age")
+        :give("maxAge", love.math.random(Enum.terrainMinMaxAge * 3, Enum.terrainMaxMaxAge * 3))
+        :give("canEat")
+		:give("hasGender")
+		:give("lastBreedTimer")
+		:give("isCarnivore")
+    end
 end
 
 return ccord
