@@ -37,7 +37,7 @@ function ccord.init()
     end)
 	Concord.component("hasGender", function(c)
 		c.value = love.math.random(1,2)
-		c.breedtimer = c.maxAge.value / 3	-- when can next breed
+		c.breedtimer = 100 --c.maxAge.value / 3	-- when can next breed
 		--! need to introduce some randomness
 	end)
 	Concord.component("isHerbivore")
@@ -57,6 +57,11 @@ function ccord.init()
                 love.graphics.draw(img, x, y, 0, TILE_SIZE / 256)
             end
             if e.isAnimal then
+				if e.isHerbivore then
+					love.graphics.setColor(247/255,1,0,1)
+				else
+					love.graphics.setColor(1,85/255,0,1)
+				end
                 local x = (e.position.col * TILE_SIZE)
                 local y = (e.position.row * TILE_SIZE)
                 love.graphics.circle("fill", x, y, 5)
@@ -200,15 +205,15 @@ function ccord.init()
 	
 	systemBreed = Concord.system({
 		pool = {"hasGender"}
-	end
-	function systemBreed:update()
+	})
+	function systemBreed:update(dt)
 		for _, e in ipairs(self.pool) do
 			e.hasGender.breedtimer = e.hasGender.breedtimer - dt
 			if e.hasGender.breedtimer < 0 then e.hasGender.breedtimer = 0 end
 	
-			if Cf.entityCanBreed(e) then
+			if Fun.entityCanBreed(e) then
 				local targetgender = ""
-				if e.hasGender.value = Enum.genderMale then
+				if e.hasGender.value == Enum.genderMale then
 					targetgender = Enum.genderFemale
 				else
 					targetgender = Enum.genderMale
@@ -216,10 +221,12 @@ function ccord.init()
 				f = getClosestGender(e, targetgender)
 				e.targetTile.row = f.position.row
 				e.targetTile.col = f.position.col
+
+				if e.position.row == f.position.row and e.position.col == f.position.col then
+					Cf.Breed(e, f)	-- e and f are entities
+				end					
 			end
-			if e.position.row = f.position.row and e.position.col = f.position.col then
-				Cf.Breed(e, f)	-- e and f are entities
-			end	
+
 		end
 	end
 		
@@ -253,7 +260,6 @@ function ccord.init()
         :give("maxAge", love.math.random(Enum.terrainMinMaxAge * 3, Enum.terrainMaxMaxAge * 3))
         :give("canEat")
 		:give("hasGender")
-		:give("lastBreedTimer")
 		:give("isHerbivore")
     end
 	
@@ -267,7 +273,6 @@ function ccord.init()
         :give("maxAge", love.math.random(Enum.terrainMinMaxAge * 3, Enum.terrainMaxMaxAge * 3))
         :give("canEat")
 		:give("hasGender")
-		:give("lastBreedTimer")
 		:give("isCarnivore")
     end
 end

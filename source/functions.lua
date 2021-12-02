@@ -120,7 +120,7 @@ end
 
 function functions.entityCanBreed(e)
 	-- determines if the provided entity can breed
-	if e.currentCalories > 50 and e.lastBreedTimer <= 0 then	-- 50 is 50% (half full)
+	if e.canEat.currentCalories > 50 and e.hasGender.breedtimer <= 0 then	-- 50 is 50% (half full)
 		return true
 	end
 	return false
@@ -136,10 +136,11 @@ function breed(e, f)
 	:give("maxAge")
 	
 	:give("hasGender")
-	:give("lastBreedTimer")
 	
-	if e:has("isHerbivore") then :give("isHerbivore") end
-	if e:has("isCarnivore") then :give("isCarnivore") end
+	if e:has("isHerbivore") then void:give("isHerbivore") end
+	if e:has("isCarnivore") then void:give("isCarnivore") end
+	
+print("Bonk")
 
 end
 

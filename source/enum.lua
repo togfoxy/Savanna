@@ -1,7 +1,7 @@
 return {
 
 timerActionTimer = 5,
-Enum.timerBreedTimer = 100,	-- default should be max age / 3
+timerBreedTimer = 100,	-- default should be max age / 3
 
 genderMale = 1,
 genderFemale = 2,
