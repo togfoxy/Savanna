@@ -118,4 +118,61 @@ function functions.applyMovement(e, velocity, dt)
     if e.position.col > NUMBER_OF_COLS then e.position.col = NUMBER_OF_COLS end
 end
 
+function functions.entityCanBreed(e)
+	-- determines if the provided entity can breed
+	if e.canEat.currentCalories > 50 and e.hasGender.breedtimer <= 0 then	-- 50 is 50% (half full)
+		return true
+	end
+	return false
+end
+
+function functions.breed(e, f)
+-- e and f are parents
+	local spawn = Concord.entity(WORLD)
+	:give("drawable")
+	:give("isAnimal")
+	:give("canEat")
+	:give("position", e.position.row, e.position.col)
+	:give("age", 0)
+	:give("maxAge")
+	:give("hasGender")
+	
+	
+	if e:has("isHerbivore") then spawn:give("isHerbivore") end
+	if e:has("isCarnivore") then spawn:give("isCarnivore") end
+	
+	e.hasGender.breedtimer = Enum.timerBreedTimer
+	f.hasGender.breedtimer = Enum.timerBreedTimer
+	spawn.hasGender.breedtimer = Enum.timerBreedTimer
+	
+print("Bonk")
+
+end
+
+function functions.getClosestGender(entity, targetgender)
+
+	local entityrow = entity.position.row
+	local entitycol = entity.position.col
+	local closestentity = {}
+	
+	local closestdistance = -1
+	for i = 1, #ANIMALS do
+		if ANIMALS[i] ~= entity then
+			if (ANIMALS[i].isHerbivore and entity.isHerbivore) or (ANIMALS[i].isCarnivore and entity.isCarnivore) then
+				if ANIMALS[i].hasGender.value == targetgender then
+					local dist = Cf.GetDistance(entitycol, entityrow, ANIMALS[i].position.col, ANIMALS[i].position.row)
+					if closestdistance < 0 or dist < closestdistance then
+						closestdistance = dist
+						closestentity = ANIMALS[i]
+					end
+				end
+			end
+		end
+	end
+	
+	return closestentity
+
+
+end
+
 return functions

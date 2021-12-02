@@ -19,9 +19,11 @@ SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 SCREEN_STACK = {}
 
-NUMBER_OF_BOTS = 10
+NUMBER_OF_HERBIVORES = 100
+NUMBER_OF_CARNIVORES = 0
 TILE_SIZE = 50
-MAP = {}
+MAP = {}			-- a 2d table of tiles
+ANIMALS = {}		-- a table of animals
 NUMBER_OF_ROWS = (Cf.round(SCREEN_HEIGHT / TILE_SIZE)) - 1
 NUMBER_OF_COLS = (Cf.round(SCREEN_WIDTH / TILE_SIZE))
 print("There are " .. NUMBER_OF_ROWS .. " rows and " .. NUMBER_OF_COLS .. " columns.")
@@ -73,10 +75,8 @@ end
 function love.draw()
 
 	TLfres.beginRendering(SCREEN_WIDTH,SCREEN_HEIGHT)
---Profi:start()
+
 	WORLD:emit("draw")
---Profi:stop()
---Profi:writeReport( 'MyProfilingReport.txt' )
 
 	TLfres.endRendering({0, 0, 0, 1})
 end
