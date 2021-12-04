@@ -19,14 +19,18 @@ SCREEN_WIDTH = 1440 -- 1920
 SCREEN_HEIGHT = 900 -- 1080
 SCREEN_STACK = {}
 
-NUMBER_OF_HERBIVORES = 10
-NUMBER_OF_CARNIVORES = 0
+NUMBER_OF_HERBIVORES = 100
+NUMBER_OF_CARNIVORES = 1
 COUNT_GRASS_TILES = 0
 TILE_SIZE = 50
+
 MAP = {}			-- a 2d table of tiles
 ANIMALS = {}		-- a table of animals
+CARCAS = {}			-- a table of dead animals
+
+
 NUMBER_OF_ROWS = (Cf.round(SCREEN_HEIGHT / TILE_SIZE)) - 1
-NUMBER_OF_COLS = (Cf.round(SCREEN_WIDTH / TILE_SIZE))
+NUMBER_OF_COLS = (Cf.round(SCREEN_WIDTH / TILE_SIZE)) - 1
 
 print("There are " .. NUMBER_OF_ROWS .. " rows and " .. NUMBER_OF_COLS .. " columns.")
 

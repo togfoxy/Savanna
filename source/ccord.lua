@@ -14,6 +14,9 @@ function ccord.init()
     Concord.component("isTile")
     Concord.component("isAnimal")
     Concord.component("hasEdibleGrass")
+    Concord.component("isHerbivore")
+    Concord.component("isCarnivore")
+    Concord.component("isCarcas")
     Concord.component("currentAction", function(c, text)
         c.value = ""
     end)
@@ -25,6 +28,7 @@ function ccord.init()
     Concord.component("canEat", function(c)
         c.currentCalories = love.math.random(25,100)
         c.calorieConsumptionRate = 1    -- calaries lost per second
+        c.nextCheckTimer = Enum.timerNextEatCheck            -- how often to check if hungry
     end)
     Concord.component("position", function(c, row, col)
         c.row = row or love.math.random(1,NUMBER_OF_ROWS)
@@ -38,7 +42,7 @@ function ccord.init()
         c.value = number or love.math.random(1, 250)
     end)
     Concord.component("maxAge", function(c, number)
-        c.value = number or love.math.random(270, 330) -- seconds
+        c.value = number or love.math.random(475, 525) -- seconds
     end)
     Concord.component("spread", function(c)
         c.timer = love.math.random((Enum.timerSpreadTimer / 2), Enum.timerSpreadTimer)
@@ -47,8 +51,7 @@ function ccord.init()
 		c.value = love.math.random(1,2)
 		c.breedtimer = love.math.random(1, 30)		 --c.maxAge.value / 3	-- when can next breed
 	end)
-	Concord.component("isHerbivore")
-	Concord.component("isCarnivore")
+
 
     -- define Systems
     systemDraw = Concord.system({
@@ -73,25 +76,42 @@ function ccord.init()
 				local drawwidth = Cf.round((e.age.value / e.maxAge.value) * 10)
 				if drawwidth < 3 then drawwidth = 3 end
 
+                local x = (e.position.col * TILE_SIZE)
+                local y = (e.position.row * TILE_SIZE)
+
 				if e.isHerbivore then
 					if e.hasGender.value == Enum.genderFemale then
 						love.graphics.setColor(1,125/255,125/255,1)
 					else
 						love.graphics.setColor(0,1,1,1)
 					end
+                    love.graphics.circle("line", x, y, drawwidth)
 				else
+                    -- carnivore
 					love.graphics.setColor(1,85/255,0,1)
+                    love.graphics.rectangle("line", x, y, 15, 15)
 				end
-                local x = (e.position.col * TILE_SIZE)
-                local y = (e.position.row * TILE_SIZE)
-                love.graphics.circle("fill", x, y, drawwidth)
 
                 if e:has("currentAction") and e.currentAction ~= nil then
                     love.graphics.setColor(1, 1, 1, 1)
                     love.graphics.print(e.currentAction, x + 10, y - 8)
                 end
             end
+            if e.isCarcas then
+                local x = (e.position.col * TILE_SIZE)
+                local y = (e.position.row * TILE_SIZE)
+                local drawwidth = 8
+                love.graphics.setColor(146/255, 115/255, 30/255, 1)
+                love.graphics.circle("fill", x, y, drawwidth)
+            end
         end
+
+        -- ** debugging **
+        -- for q,w in pairs(ANIMALS) do
+        --     local x = (w.position.col * TILE_SIZE)
+        --     local y = (w.position.row * TILE_SIZE)
+        --     love.graphics.rectangle("line", x, y, 10, 10)
+        -- end
     end
 
     systemAge = Concord.system({
@@ -117,28 +137,21 @@ function ccord.init()
             end
             if e.isAnimal then
                 if e.age.value > e.maxAge.value then
-                    print("Dead from age: " .. e.uid.value)
+                    print("Dead from age")
+                    Fun.destroyAnimal(e)
 
-                    for i = 1, #ANIMALS do
-                        if ANIMALS[i].uid.value == e.uid.value then
-                            table.remove(ANIMALS, i)
-                            break
-                        end
-                    end
-                    e:destroy()
 				end
             end
+            if e.isCarcas and e.age.value > e.maxAge.value then
+                print("Carcas dead from age")
+                Fun.destroyCarcas(e)
+            end
+
             if e.canEat then
                 e.canEat.currentCalories = e.canEat.currentCalories - (e.canEat.calorieConsumptionRate * dt)
                 if e.canEat.currentCalories < 0 then
 					print("Dead from hunger")
-                    for i = 1, #ANIMALS do
-                        if ANIMALS[i].uid.value == e.uid.value then
-                            table.remove(ANIMALS, i)
-                            break
-                        end
-                    end
-                   e:destroy()
+                    Fun.destroyAnimal(e)
 				end
             end
         end
@@ -150,38 +163,51 @@ function ccord.init()
     function systemcanEat:update(dt)
 
         for k, e in ipairs(self.pool) do
-            local rndnum = love.math.random(100)
-            if  rndnum > e.canEat.currentCalories then
-                -- time to eat
-                local animalrow = Cf.round(e.position.row,0)
-                local animalcol = Cf.round(e.position.col,0)
-				if e.isHerbivore then
-					local hasEdibleGrass = (MAP[animalrow][animalcol].hasEdibleGrass or nil)
-					if hasEdibleGrass ~= nil then
-						-- can eat
-						MAP[animalrow][animalcol].terrainType.value = Enum.terrainGrassDry
-						MAP[animalrow][animalcol].age.value = 0
-						MAP[animalrow][animalcol].maxAge.value = love.math.random(Enum.terrainMinMaxAge, Enum.terrainMaxMaxAge)
-						MAP[animalrow][animalcol].hasEdibleGrass = false
-						e.canEat.currentCalories = e.canEat.currentCalories + Enum.grassCalories
-                        e.currentAction = ""
-					else
-						-- not on edible grass but still hungry
-						-- set target tile to an edible grass
-						if e:has("hasTargetTile") then
-                            -- don't override current target
-						else
-							local targetTile = {}
-							targetTile.row, targetTile.col = Fun.getClosestTile(animalrow, animalcol, Enum.terrainTeal)
+            e.canEat.nextCheckTimer = e.canEat.nextCheckTimer - dt
+            if e.canEat.nextCheckTimer < 0 then
+                e.canEat.nextCheckTimer = Enum.timerNextEatCheck
+
+                local rndnum = love.math.random(100)
+                if  rndnum > e.canEat.currentCalories then
+                    -- time to eat
+                    local animalrow = Cf.round(e.position.row,0)
+                    local animalcol = Cf.round(e.position.col,0)
+    				if e.isHerbivore then
+    					local hasEdibleGrass = (MAP[animalrow][animalcol].hasEdibleGrass or nil)
+    					if hasEdibleGrass ~= nil then
+    						-- can eat
+    						MAP[animalrow][animalcol].terrainType.value = Enum.terrainGrassDry
+    						MAP[animalrow][animalcol].age.value = 0
+    						MAP[animalrow][animalcol].maxAge.value = love.math.random(Enum.terrainMinMaxAge, Enum.terrainMaxMaxAge)
+    						MAP[animalrow][animalcol].hasEdibleGrass = false
+    						e.canEat.currentCalories = e.canEat.currentCalories + Enum.grassCalories
+                            e.currentAction = ""
+    					else
+    						-- not on edible grass but still hungry
+    						local targetTile = {}
+    						targetTile.row, targetTile.col = Fun.getClosestTile(animalrow, animalcol, Enum.terrainTeal)
                             if targetTile.row ~= 0 then
-							    e:ensure("hasTargetTile", targetTile.row, targetTile.col)
+    						    e:ensure("hasTargetTile", targetTile.row, targetTile.col)
                                 e.currentAction = "Moving to grass"
                             end
-						end
-					end
-				else
-					-- carnivore
-				end
+    					end
+    				else
+    					-- carnivore
+                        local closestcarcass, carcasdistance = Fun.getClosestCarcass(e)
+                        if carcasdistance >=0 then
+print(carcasdistance)
+
+                            if carcasdistance <= 3 then
+                                e.canEat.currentCalories = e.canEat.currentCalories + Enum.carcasCalories
+                                e.currentAction = ""
+                                Fun.destroyCarcas(closestcarcass)
+                            else
+                                e:ensure("hasTargetTile", closestcarcass.position.row, closestcarcass.position.col)
+                                e.currentAction = "Moving to carcas"
+                            end
+                        end
+    				end
+                end
             end
         end
     end
@@ -233,8 +259,8 @@ function ccord.init()
                             MAP[row][col].terrainType.value = Enum.terrainGrassGreen
                             MAP[row][col].age.value = 0
                             MAP[row][col].maxAge.value = love.math.random(Enum.terrainMinMaxAge, Enum.terrainMaxMaxAge)
-                            e.spread.timer = love.math.random((Enum.timerSpreadTimer / 2), Enum.timerSpreadTimer)
                         end
+                        e.spread.timer = love.math.random((Enum.timerSpreadTimer / 2), Enum.timerSpreadTimer)
                     end
                 end
             end
@@ -262,10 +288,10 @@ function ccord.init()
     				-- returns an entity
     				f = Fun.getClosestGender(e, targetgender)
 
-    				if f ~= nil then
+    				if f ~= nil and e:has("hasTargetTile") == false then
                         -- print("Seeking opposite gender")
-    					e:ensure("hasTargetTile", f.position.row, f.position.col)
-                        e.currentAction = "Seeking mate"
+    					e:ensure("hasTargetTile", Cf.round(f.position.row,1), Cf.round(f.position.col,1))
+                        e.currentAction = "Seeking mate at " .. e.hasTargetTile.row .. " " .. e.hasTargetTile.col
 
     					if Cf.round(e.position.row,1) == Cf.round(f.position.row,1) and Cf.round(e.position.col,1) == Cf.round(f.position.col,1) then
     						-- check if can still breed after travel timer
@@ -288,7 +314,7 @@ function ccord.init()
     						end
     					end
                     else
-                        print("Opposite sex no longer available")
+
     				end
     			end
             end
@@ -364,6 +390,7 @@ function ccord.init()
 		:give("isCarnivore")
         :give("currentAction")
         :give("uid")
+        BOTS.canEat.currentCalories = 180
 
 		MAP[BOTS.position.row][BOTS.position.col].hasGender = BOTS.hasGender
 		MAP[BOTS.position.row][BOTS.position.col].hasGender.value = BOTS.hasGender.value

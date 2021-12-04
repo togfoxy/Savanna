@@ -163,7 +163,7 @@ function functions.getClosestGender(entity, targetgender)
 		if ANIMALS[i] ~= entity then
 			if (ANIMALS[i].isHerbivore and entity.isHerbivore) or (ANIMALS[i].isCarnivore and entity.isCarnivore) then
 				if ANIMALS[i].hasGender.value == targetgender then
-                    if (ANIMALS[i].age.value >= (ANIMALS[i].maxAge.value / 3)) then
+                    if (ANIMALS[i].age.value >= (ANIMALS[i].maxAge.value / 3) and (ANIMALS[i].age.value < ANIMALS[i].maxAge.value)) then
     					local dist = Cf.GetDistance(entitycol, entityrow, ANIMALS[i].position.col, ANIMALS[i].position.row)
     					if closestdistance < 0 or dist < closestdistance then
     						closestdistance = dist
@@ -176,7 +176,58 @@ function functions.getClosestGender(entity, targetgender)
 	end
 
 	return closestentity
+end
 
+function functions.destroyAnimal(e)
+    -- add a carcas
+    local mycarcas = Concord.entity(WORLD)
+    :give("isCarcas")
+    :give("position")
+    :give("drawable")
+    :give("age")
+    :give("maxAge")
+    :give("uid")
+    mycarcas.position.row = e.position.row
+    mycarcas.position.col = e.position.col
+    mycarcas.age.value = 0
+    mycarcas.maxAge.value = 90
+    table.insert(CARCAS, mycarcas)
+
+    for i = 1, #ANIMALS do
+        if ANIMALS[i].uid.value == e.uid.value then
+            table.remove(ANIMALS, i)
+            break
+        end
+    end
+    e:destroy()
+end
+
+function functions.destroyCarcas(e)
+    for i = 1, #CARCAS do
+        if CARCAS[i].uid.value == e.uid.value then
+            table.remove(CARCAS, i)
+            break
+        end
+    end
+    e:destroy()
+end
+
+function functions.getClosestCarcass(entity)
+
+    local entityrow = entity.position.row
+	local entitycol = entity.position.col
+	local closestentity = nil
+
+	local closestdistance = -1
+	for i = 1, #CARCAS do
+		local dist = Cf.GetDistance(entitycol, entityrow, CARCAS[i].position.col, ANIMALS[i].position.row)
+		if closestdistance < 0 or dist < closestdistance then
+			closestdistance = dist
+			closestentity = CARCAS[i]
+		end
+    end
+
+	return closestentity, closestdistance
 
 end
 
