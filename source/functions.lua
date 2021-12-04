@@ -120,7 +120,7 @@ end
 
 function functions.entityCanBreed(e)
 	-- determines if the provided entity can breed
-	if e.canEat.currentCalories > 50 and e.hasGender.breedtimer <= 0 then	-- 50 is 50% (half full)
+	if e.canEat.currentCalories > 50 and e.hasGender.breedtimer <= 0 and (e.age.value >= e.maxAge.value / 3) then	-- 50 is 50% (half full)
 		return true
 	end
 	return false
@@ -136,7 +136,8 @@ function functions.breed(e, f)
 	:give("age", 0)
 	:give("maxAge")
 	:give("hasGender")
-
+    :give("currentAction")
+    :give("uid")
 
 	if e:has("isHerbivore") then spawn:give("isHerbivore") end
 	if e:has("isCarnivore") then spawn:give("isCarnivore") end
@@ -147,24 +148,28 @@ function functions.breed(e, f)
 
     print("Bonk")
 
+    table.insert(ANIMALS, spawn)
+
 end
 
 function functions.getClosestGender(entity, targetgender)
 
 	local entityrow = entity.position.row
 	local entitycol = entity.position.col
-	local closestentity = {}
+	local closestentity = nil
 
 	local closestdistance = -1
 	for i = 1, #ANIMALS do
 		if ANIMALS[i] ~= entity then
 			if (ANIMALS[i].isHerbivore and entity.isHerbivore) or (ANIMALS[i].isCarnivore and entity.isCarnivore) then
 				if ANIMALS[i].hasGender.value == targetgender then
-					local dist = Cf.GetDistance(entitycol, entityrow, ANIMALS[i].position.col, ANIMALS[i].position.row)
-					if closestdistance < 0 or dist < closestdistance then
-						closestdistance = dist
-						closestentity = ANIMALS[i]
-					end
+                    if (ANIMALS[i].age.value >= (ANIMALS[i].maxAge.value / 3)) then
+    					local dist = Cf.GetDistance(entitycol, entityrow, ANIMALS[i].position.col, ANIMALS[i].position.row)
+    					if closestdistance < 0 or dist < closestdistance then
+    						closestdistance = dist
+    						closestentity = ANIMALS[i]
+    					end
+                    end
 				end
 			end
 		end

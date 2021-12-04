@@ -15,11 +15,11 @@ Ccord = require 'ccord'
 Enum = require 'enum'
 Fun = require 'functions'
 
-SCREEN_WIDTH = 1920
-SCREEN_HEIGHT = 1080
+SCREEN_WIDTH = 1440 -- 1920
+SCREEN_HEIGHT = 900 -- 1080
 SCREEN_STACK = {}
 
-NUMBER_OF_HERBIVORES = 100
+NUMBER_OF_HERBIVORES = 10
 NUMBER_OF_CARNIVORES = 0
 COUNT_GRASS_TILES = 0
 TILE_SIZE = 50
@@ -44,7 +44,7 @@ function love.load()
         void = love.window.setMode(SCREEN_WIDTH, SCREEN_HEIGHT,{fullscreen=false,display=1,resizable=true, borderless=false})	-- display = monitor number (1 or 2)
         gbolDebug = false
     else
-        void = love.window.setMode(SCREEN_WIDTH, SCREEN_HEIGHT,{fullscreen=false,display=1,resizable=true, borderless=false})	-- display = monitor number (1 or 2)
+        void = love.window.setMode(SCREEN_WIDTH, SCREEN_HEIGHT,{fullscreen=false,display=2,resizable=true, borderless=false})	-- display = monitor number (1 or 2)
     end
 
 	love.window.setTitle("Savanna " .. gstrGameVersion)

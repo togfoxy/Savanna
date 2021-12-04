@@ -1,7 +1,9 @@
 return {
 
-timerActionTimer = 5,
-timerBreedTimer = 100,	-- default should be max age / 3
+timerBreedTimer = 75,	-- default should be max age / 3
+timerTravelTimeThreshold = 10,
+timerSpreadTimer = 120,  -- make this the same as terrainMaxMaxAge
+
 
 genderMale = 1,
 genderFemale = 2,
@@ -15,8 +17,6 @@ terrainNumberOfTypes = 4,
 
 terrainMinMaxAge = 270, -- 270,
 terrainMaxMaxAge = 330, -- 330,
-
-timerSpreadTimer = 120,  -- make this the same as terrainMaxMaxAge
 
 grassCalories = 30
 

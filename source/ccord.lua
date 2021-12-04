@@ -7,16 +7,23 @@ function ccord.init()
     WORLD = Concord.world()
 
     -- define components
+    Concord.component("uid", function(c)
+        c.value = Cf.Getuuid()
+    end)
     Concord.component("drawable")
     Concord.component("isTile")
     Concord.component("isAnimal")
     Concord.component("hasEdibleGrass")
+    Concord.component("currentAction", function(c, text)
+        c.value = ""
+    end)
     Concord.component("hasTargetTile", function(c, row, col)
         c.row = row
         c.col = col
+        c.traveltime = 0
     end)
     Concord.component("canEat", function(c)
-        c.currentCalories = 100
+        c.currentCalories = love.math.random(25,100)
         c.calorieConsumptionRate = 1    -- calaries lost per second
     end)
     Concord.component("position", function(c, row, col)
@@ -38,7 +45,7 @@ function ccord.init()
     end)
 	Concord.component("hasGender", function(c)
 		c.value = love.math.random(1,2)
-		c.breedtimer = love.math.random(Enum.timerBreedTimer * 0.75, Enum.timerBreedTimer * 1.25)		 --c.maxAge.value / 3	-- when can next breed
+		c.breedtimer = love.math.random(1, 30)		 --c.maxAge.value / 3	-- when can next breed
 	end)
 	Concord.component("isHerbivore")
 	Concord.component("isCarnivore")
@@ -78,6 +85,11 @@ function ccord.init()
                 local x = (e.position.col * TILE_SIZE)
                 local y = (e.position.row * TILE_SIZE)
                 love.graphics.circle("fill", x, y, drawwidth)
+
+                if e:has("currentAction") and e.currentAction ~= nil then
+                    love.graphics.setColor(1, 1, 1, 1)
+                    love.graphics.print(e.currentAction, x + 10, y - 8)
+                end
             end
         end
     end
@@ -105,15 +117,28 @@ function ccord.init()
             end
             if e.isAnimal then
                 if e.age.value > e.maxAge.value then
-					e:destroy()
-					print("Dead from age")
+                    print("Dead from age: " .. e.uid.value)
+
+                    for i = 1, #ANIMALS do
+                        if ANIMALS[i].uid.value == e.uid.value then
+                            table.remove(ANIMALS, i)
+                            break
+                        end
+                    end
+                    e:destroy()
 				end
             end
             if e.canEat then
                 e.canEat.currentCalories = e.canEat.currentCalories - (e.canEat.calorieConsumptionRate * dt)
                 if e.canEat.currentCalories < 0 then
-					e:destroy()
 					print("Dead from hunger")
+                    for i = 1, #ANIMALS do
+                        if ANIMALS[i].uid.value == e.uid.value then
+                            table.remove(ANIMALS, i)
+                            break
+                        end
+                    end
+                   e:destroy()
 				end
             end
         end
@@ -139,15 +164,18 @@ function ccord.init()
 						MAP[animalrow][animalcol].maxAge.value = love.math.random(Enum.terrainMinMaxAge, Enum.terrainMaxMaxAge)
 						MAP[animalrow][animalcol].hasEdibleGrass = false
 						e.canEat.currentCalories = e.canEat.currentCalories + Enum.grassCalories
+                        e.currentAction = ""
 					else
 						-- not on edible grass but still hungry
 						-- set target tile to an edible grass
 						if e:has("hasTargetTile") then
+                            -- don't override current target
 						else
 							local targetTile = {}
 							targetTile.row, targetTile.col = Fun.getClosestTile(animalrow, animalcol, Enum.terrainTeal)
                             if targetTile.row ~= 0 then
 							    e:ensure("hasTargetTile", targetTile.row, targetTile.col)
+                                e.currentAction = "Moving to grass"
                             end
 						end
 					end
@@ -166,8 +194,18 @@ function ccord.init()
             -- adjust x and y
             Fun.applyMovement(e, e.position.maxSpeed, dt)
             -- remove hasTargetTile if at destination
-            if (Cf.round(e.position.row,1) == Cf.round(e.hasTargetTile.row,1)) and Cf.round(e.position.col,1) == Cf.round(e.hasTargetTile.col,1) then
-                e:remove("hasTargetTile")
+            if e:has("hasTargetTile") then
+                if (Cf.round(e.position.row,1) == Cf.round(e.hasTargetTile.row,1)) and Cf.round(e.position.col,1) == Cf.round(e.hasTargetTile.col,1) then
+                    e:remove("hasTargetTile")
+                    -- print("Target tile removed " ..  dt)
+                else
+                    e.hasTargetTile.traveltime = e.hasTargetTile.traveltime + dt
+                    if e.hasTargetTile.traveltime > Enum.timerTravelTimeThreshold then
+                        e.hasTargetTile.traveltime = 0
+                        e:remove("hasTargetTile")
+                        e.currentAction = ""
+                    end
+                end
             end
         end
     end
@@ -209,37 +247,51 @@ function ccord.init()
 	function systemBreed:update(dt)
 		for _, e in ipairs(self.pool) do
 			e.hasGender.breedtimer = e.hasGender.breedtimer - dt
-			if e.hasGender.breedtimer < 0 then e.hasGender.breedtimer = 0 end
+			if e.hasGender.breedtimer <= 0 then
+                -- candidate to breed
+                e.hasGender.breedtimer = 0
 
-			if Fun.entityCanBreed(e) then
-				local targetgender = ""
-				if e.hasGender.value == Enum.genderMale then
-					targetgender = Enum.genderFemale
-				else
-					targetgender = Enum.genderMale
-				end
+    			if Fun.entityCanBreed(e) then
+    				local targetgender = ""
+    				if e.hasGender.value == Enum.genderMale then
+    					targetgender = Enum.genderFemale
+    				else
+    					targetgender = Enum.genderMale
+    				end
 
-				local f = {}
-				-- returns an entity
-				f = Fun.getClosestGender(e, targetgender)
+    				-- returns an entity
+    				f = Fun.getClosestGender(e, targetgender)
 
-				if f ~= nil then
-					e:ensure("hasTargetTile", f.position.row, f.position.col)
+    				if f ~= nil then
+                        -- print("Seeking opposite gender")
+    					e:ensure("hasTargetTile", f.position.row, f.position.col)
+                        e.currentAction = "Seeking mate"
 
-					if e.position.row == f.position.row and e.position.col == f.position.col then
-						-- check if can still breed after travel timer
-						if Fun.entityCanBreed(e) and Fun.entityCanBreed(f) then
-							Fun.breed(e, f)	-- e and f are entities
-							-- reset timer even if breeding failed
-							e.hasGender.breedtimer = Enum.timerBreedTimer
-							f.hasGender.breedtimer = Enum.timerBreedTimer
-						end
-					end
-                else
-                    print("Opposite sex not available")
-				end
-			end
-
+    					if Cf.round(e.position.row,1) == Cf.round(f.position.row,1) and Cf.round(e.position.col,1) == Cf.round(f.position.col,1) then
+    						-- check if can still breed after travel timer
+                            e.currentAction = ""
+                            if Fun.entityCanBreed(e) and Fun.entityCanBreed(f) then
+    							Fun.breed(e, f)	-- e and f are entities
+    							-- reset timer even if breeding failed
+                                -- females need to rest longer after breeding
+                                if e.hasGender.value == Enum.genderFemale then
+                                    e.hasGender.breedtimer = Enum.timerBreedTimer
+                                else
+                                    e.hasGender.breedtimer = Enum.timerBreedTimer / 2
+                                end
+                                if f.hasGender.value == Enum.genderFemale then
+                                    f.hasGender.breedtimer = Enum.timerBreedTimer
+                                else
+                                    f.hasGender.breedtimer = Enum.timerBreedTimer / 2
+                                end
+                                e.currentAction = ""
+    						end
+    					end
+                    else
+                        print("Opposite sex no longer available")
+    				end
+    			end
+            end
 		end
 	end
 
@@ -283,7 +335,7 @@ function ccord.init()
         end
     end
 
-    -- create agents
+    -- create animals
     for i = 1, NUMBER_OF_HERBIVORES do
         local BOTS = Concord.entity(WORLD)
         -- assign components
@@ -295,6 +347,8 @@ function ccord.init()
         :give("canEat")
 		:give("hasGender")
 		:give("isHerbivore")
+        :give("currentAction")
+        :give("uid")
     end
 
     for i = 1, NUMBER_OF_CARNIVORES do
@@ -308,6 +362,8 @@ function ccord.init()
         :give("canEat")
 		:give("hasGender")
 		:give("isCarnivore")
+        :give("currentAction")
+        :give("uid")
 
 		MAP[BOTS.position.row][BOTS.position.col].hasGender = BOTS.hasGender
 		MAP[BOTS.position.row][BOTS.position.col].hasGender.value = BOTS.hasGender.value
